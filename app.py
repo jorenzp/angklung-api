@@ -1677,30 +1677,18 @@ def debug_connection():
 
 @app.route('/debug_files', methods=['GET'])
 def debug_files():
-    import os
     try:
-        current_dir = os.getcwd()
-        files_in_current = os.listdir('.')
-
-        model_dir_exists = os.path.exists('model')
-        model_files = []
-        if model_dir_exists:
-            model_files = os.listdir('model')
-
-        # Also check for specific model files
-        model_file_status = {
-            'unified_angklung_model.keras': os.path.exists('model/unified_angklung_model.keras'),
-            'unified_angklung_extractor.pkl': os.path.exists('model/unified_angklung_extractor.pkl'),
-            'unified_angklung_label_encoder.pkl': os.path.exists('model/unified_angklung_label_encoder.pkl'),
-            'unified_angklung_metadata.pkl': os.path.exists('model/unified_angklung_metadata.pkl')
-        }
-
         return jsonify({
-            'current_directory': current_dir,
-            'files_in_root': files_in_current,
-            'model_directory_exists': model_dir_exists,
-            'model_files': model_files,
-            'specific_model_files': model_file_status
+            'current_directory': os.getcwd(),
+            'files_in_root': os.listdir('.'),
+            'model_directory_exists': os.path.exists('model'),
+            'model_files': os.listdir('model') if os.path.exists('model') else [],
+            'expected_files': [
+                'unified_angklung_model.keras',
+                'unified_angklung_extractor.pkl',
+                'unified_angklung_label_encoder.pkl',
+                'unified_angklung_metadata.pkl'
+            ]
         })
     except Exception as e:
         return jsonify({'error': str(e)})
@@ -1862,14 +1850,10 @@ def debug_load():
 
 
 def load_multi_duration_model():
-    """Load model with better error handling"""
     global model, extractor, label_encoder, metadata
 
     try:
         logger.info("Starting model loading process...")
-
-        # Check if running in production (Railway)
-        is_production = os.environ.get('RAILWAY_ENVIRONMENT') == 'production'
 
         model_files = {
             'model': 'model/unified_angklung_model.keras',
@@ -1877,6 +1861,29 @@ def load_multi_duration_model():
             'label_encoder': 'model/unified_angklung_label_encoder.pkl',
             'metadata': 'model/unified_angklung_metadata.pkl'
         }
+
+        # ADD THIS DEBUG SECTION
+        logger.info(f"Current working directory: {os.getcwd()}")
+        logger.info(f"Files in current directory: {os.listdir('.')}")
+
+        if os.path.exists('model'):
+            logger.info(f"Files in model directory: {os.listdir('model')}")
+        else:
+            logger.error("Model directory does not exist!")
+            return False
+
+        # Check each file individually
+        for name, path in model_files.items():
+            exists = os.path.exists(path)
+            logger.info(f"{name} file ({path}): {'EXISTS' if exists else 'MISSING'}")
+            if exists:
+                size = os.path.getsize(path)
+                logger.info(f"  - Size: {size} bytes")
+
+        missing_files = [name for name, path in model_files.items() if not os.path.exists(path)]
+        if missing_files:
+            logger.error(f"Missing files: {missing_files}")
+            return False
 
         # Check file existence
         missing_files = [name for name, path in model_files.items() if not os.path.exists(path)]
