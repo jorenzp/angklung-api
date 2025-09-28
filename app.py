@@ -1979,8 +1979,7 @@ def load_multi_duration_model():
         logger.error(f"Full traceback: {traceback.format_exc()}")
         return False
 
-
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 8080))  # Changed to 8080
     debug = os.environ.get('DEBUG', 'False').lower() == 'true'
     app.run(host='0.0.0.0', port=port, debug=debug, threaded=True)

@@ -35,4 +35,4 @@ COPY *.py .
 EXPOSE 8080
 
 # Use gunicorn with proper port handling
-CMD gunicorn --bind 0.0.0.0:8080 --timeout 120 --workers 1 --max-requests 100 --preload app:app
+CMD ["python", "app.py"]
