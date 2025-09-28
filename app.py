@@ -1850,23 +1850,72 @@ def health_check():
             'status': 'unhealthy',
             'error': str(e)
         }), 500
+
+
 @app.route('/debug_load', methods=['GET'])
 def debug_load():
+    import traceback
+    import os
+
+    debug_info = {
+        'files_exist': {},
+        'loading_steps': {},
+        'errors': []
+    }
+
     try:
-        result = load_multi_duration_model()
-        return jsonify({
-            'load_successful': result,
-            'model_loaded': model is not None,
-            'extractor_loaded': extractor is not None,
-            'label_encoder_loaded': label_encoder is not None,
-            'metadata_loaded': metadata is not None
-        })
+        # Check file existence
+        model_files = {
+            'model': 'model/unified_angklung_model.keras',
+            'extractor': 'model/unified_angklung_extractor.pkl',
+            'label_encoder': 'model/unified_angklung_label_encoder.pkl',
+            'metadata': 'model/unified_angklung_metadata.pkl'
+        }
+
+        for name, path in model_files.items():
+            debug_info['files_exist'][name] = os.path.exists(path)
+
+        # Try loading each component individually
+        try:
+            import tensorflow as tf
+            from tensorflow import keras
+            model_temp = keras.models.load_model('model/unified_angklung_model.keras')
+            debug_info['loading_steps']['keras_model'] = 'SUCCESS'
+        except Exception as e:
+            debug_info['loading_steps']['keras_model'] = f'FAILED: {str(e)}'
+            debug_info['errors'].append(f'Keras model error: {str(e)}')
+
+        try:
+            import pickle
+            with open('model/unified_angklung_extractor.pkl', 'rb') as f:
+                extractor_temp = pickle.load(f)
+            debug_info['loading_steps']['extractor'] = 'SUCCESS'
+        except Exception as e:
+            debug_info['loading_steps']['extractor'] = f'FAILED: {str(e)}'
+            debug_info['errors'].append(f'Extractor error: {str(e)}')
+
+        try:
+            with open('model/unified_angklung_label_encoder.pkl', 'rb') as f:
+                label_encoder_temp = pickle.load(f)
+            debug_info['loading_steps']['label_encoder'] = 'SUCCESS'
+        except Exception as e:
+            debug_info['loading_steps']['label_encoder'] = f'FAILED: {str(e)}'
+            debug_info['errors'].append(f'Label encoder error: {str(e)}')
+
+        try:
+            with open('model/unified_angklung_metadata.pkl', 'rb') as f:
+                metadata_temp = pickle.load(f)
+            debug_info['loading_steps']['metadata'] = 'SUCCESS'
+        except Exception as e:
+            debug_info['loading_steps']['metadata'] = f'FAILED: {str(e)}'
+            debug_info['errors'].append(f'Metadata error: {str(e)}')
+
+        return jsonify(debug_info)
+
     except Exception as e:
-        import traceback
-        return jsonify({
-            'error': str(e),
-            'traceback': traceback.format_exc()
-        })
+        debug_info['errors'].append(f'Overall error: {str(e)}')
+        debug_info['traceback'] = traceback.format_exc()
+        return jsonify(debug_info)
 def load_multi_duration_model():
     """Load model with minimal changes for compatibility"""
     global model, extractor, label_encoder, metadata
