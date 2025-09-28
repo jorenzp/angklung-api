@@ -1850,7 +1850,23 @@ def health_check():
             'status': 'unhealthy',
             'error': str(e)
         }), 500
-
+@app.route('/debug_load', methods=['GET'])
+def debug_load():
+    try:
+        result = load_multi_duration_model()
+        return jsonify({
+            'load_successful': result,
+            'model_loaded': model is not None,
+            'extractor_loaded': extractor is not None,
+            'label_encoder_loaded': label_encoder is not None,
+            'metadata_loaded': metadata is not None
+        })
+    except Exception as e:
+        import traceback
+        return jsonify({
+            'error': str(e),
+            'traceback': traceback.format_exc()
+        })
 def load_multi_duration_model():
     """Load model with minimal changes for compatibility"""
     global model, extractor, label_encoder, metadata
@@ -1906,6 +1922,7 @@ def load_multi_duration_model():
         logger.info(f"Model type: {metadata.get('model_type', 'Unknown')}")
 
         return True
+
 
     except Exception as e:
         logger.error(f"Failed to load model: {e}")
