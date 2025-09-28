@@ -18,14 +18,14 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
+# Copy requirements first
 COPY requirements.txt .
 
-# Install Python dependencies in specific order
-RUN pip install --upgrade pip
-RUN pip install --no-cache-dir numpy==1.23.5
-RUN pip install --no-cache-dir tensorflow==2.13.0
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies with --root-user-action=ignore to suppress warnings
+RUN pip install --upgrade pip --root-user-action=ignore
+RUN pip install --no-cache-dir numpy==1.23.5 --root-user-action=ignore
+RUN pip install --no-cache-dir tensorflow==2.13.0 --root-user-action=ignore
+RUN pip install --no-cache-dir -r requirements.txt --root-user-action=ignore
 
 # Copy application files
 COPY . .
@@ -33,5 +33,5 @@ COPY . .
 # Expose port
 EXPOSE 8080
 
-# Add startup command - THIS IS CRITICAL
+# Use python directly - no gunicorn needed
 CMD ["python", "app.py"]
