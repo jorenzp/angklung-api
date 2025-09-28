@@ -19,11 +19,8 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy the entire project
+# Copy everything from capstone folder to /app
 COPY . .
-
-# Set working directory to capstone folder
-WORKDIR /app/capstone
 
 # Install Python dependencies
 RUN pip install --upgrade pip --root-user-action=ignore
@@ -34,5 +31,4 @@ RUN pip install --no-cache-dir -r requirements.txt --root-user-action=ignore
 ENV PORT=8080
 EXPOSE $PORT
 
-# Run from capstone directory
-CMD gunicorn --bind 0.0.0.0:$PORT --workers 1 --timeout 120 --preload app:app
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "1", "--timeout", "120", "--preload", "app:app"]
