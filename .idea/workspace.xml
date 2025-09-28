@@ -5,20 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d442ba4b-fced-4c78-84c5-86f4d791f51d" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/model/unified_angklung_extractor.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/model/unified_angklung_label_encoder.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/model/unified_angklung_metadata.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/model/unified_angklung_model.keras" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/original_notes/do.wav" beforeDir="false" afterPath="$PROJECT_DIR$/.dockerignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/original_notes/do_high.wav" beforeDir="false" afterPath="$PROJECT_DIR$/Dockerfile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/original_notes/fa.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/original_notes/la.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/original_notes/mi.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/original_notes/re.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/original_notes/sol.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/original_notes/ti.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -35,6 +24,15 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/.venv/dataset_original/fa/fa_short.wav" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/.venv/dataset_original/sol/sol_short.wav" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/.venv/pyvenv.cfg" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/.venv/requirements.txt" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/.venv/tflite_convert.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/.venv/train_note_model.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/app.py" root0="SKIP_INSPECTION" />
+  </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 0
 }</component>
@@ -44,37 +42,37 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Python.FIX_METADATA.executor": "Run",
-    "Python.app.executor": "Run",
-    "Python.augments_notes.executor": "Run",
-    "Python.chart.executor": "Run",
-    "Python.data_augmentation.executor": "Run",
-    "Python.debug_feature_extraction.executor": "Run",
-    "Python.diagnose_angklung_model.executor": "Run",
-    "Python.extract_mfccs.executor": "Run",
-    "Python.feature_extraction.executor": "Run",
-    "Python.fixed_feature_extraction.executor": "Run",
-    "Python.incremental_training.executor": "Run",
-    "Python.negative_data.executor": "Run",
-    "Python.organized_short_notes.executor": "Run",
-    "Python.pipe_verification.executor": "Run",
-    "Python.predict_all_notes.executor": "Run",
-    "Python.predict_note.executor": "Run",
-    "Python.prepare_dataset.executor": "Run",
-    "Python.remove.executor": "Run",
-    "Python.scaler_extractor.executor": "Run",
-    "Python.shortNoteAugmentation.executor": "Run",
-    "Python.test.executor": "Run",
-    "Python.tflite_convert.executor": "Run",
-    "Python.train_note_model.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "main",
-    "last_opened_file_path": "C:/Users/Alliyah/PycharmProjects/capstone/model",
-    "run.code.analysis.last.selected.profile": "pProject Default"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Python.FIX_METADATA.executor&quot;: &quot;Run&quot;,
+    &quot;Python.app.executor&quot;: &quot;Run&quot;,
+    &quot;Python.augments_notes.executor&quot;: &quot;Run&quot;,
+    &quot;Python.chart.executor&quot;: &quot;Run&quot;,
+    &quot;Python.data_augmentation.executor&quot;: &quot;Run&quot;,
+    &quot;Python.debug_feature_extraction.executor&quot;: &quot;Run&quot;,
+    &quot;Python.diagnose_angklung_model.executor&quot;: &quot;Run&quot;,
+    &quot;Python.extract_mfccs.executor&quot;: &quot;Run&quot;,
+    &quot;Python.feature_extraction.executor&quot;: &quot;Run&quot;,
+    &quot;Python.fixed_feature_extraction.executor&quot;: &quot;Run&quot;,
+    &quot;Python.incremental_training.executor&quot;: &quot;Run&quot;,
+    &quot;Python.negative_data.executor&quot;: &quot;Run&quot;,
+    &quot;Python.organized_short_notes.executor&quot;: &quot;Run&quot;,
+    &quot;Python.pipe_verification.executor&quot;: &quot;Run&quot;,
+    &quot;Python.predict_all_notes.executor&quot;: &quot;Run&quot;,
+    &quot;Python.predict_note.executor&quot;: &quot;Run&quot;,
+    &quot;Python.prepare_dataset.executor&quot;: &quot;Run&quot;,
+    &quot;Python.remove.executor&quot;: &quot;Run&quot;,
+    &quot;Python.scaler_extractor.executor&quot;: &quot;Run&quot;,
+    &quot;Python.shortNoteAugmentation.executor&quot;: &quot;Run&quot;,
+    &quot;Python.test.executor&quot;: &quot;Run&quot;,
+    &quot;Python.tflite_convert.executor&quot;: &quot;Run&quot;,
+    &quot;Python.train_note_model.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/Alliyah/PycharmProjects/capstone/model&quot;,
+    &quot;run.code.analysis.last.selected.profile&quot;: &quot;pProject Default&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\Alliyah\PycharmProjects\capstone\model" />
@@ -109,5 +107,28 @@
   </component>
   <component name="UnknownFeatures">
     <option featureType="com.intellij.fileTypeFactory" implementationName="*.cfg" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State>
+              <option name="FILTERS">
+                <map>
+                  <entry key="branch">
+                    <value>
+                      <list>
+                        <option value="main" />
+                      </list>
+                    </value>
+                  </entry>
+                </map>
+              </option>
+            </State>
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
 </project>

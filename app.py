@@ -1139,69 +1139,6 @@ class MultiDurationAngklungExtractor:
         return self.scaler.transform(features)
 
 
-def load_multi_duration_model():
-    """Load model with minimal changes for compatibility"""
-    global model, extractor, label_encoder, metadata
-
-    try:
-        model_path = '.venv/model/unified_angklung_model.keras'
-        extractor_path = '.venv/model/unified_angklung_extractor.pkl'
-        label_encoder_path = '.venv/model/unified_angklung_label_encoder.pkl'
-        metadata_path = '.venv/model/unified_angklung_metadata.pkl'
-
-        if not all(os.path.exists(path) for path in [model_path, extractor_path, label_encoder_path]):
-            missing_files = [path for path in [model_path, extractor_path, label_encoder_path]
-                             if not os.path.exists(path)]
-            logger.error(f"Missing unified model files: {missing_files}")
-            return False
-
-        # Load model normally
-        model = keras.models.load_model(model_path)
-        model.compile(optimizer='adam', loss='sparse_categorical_crossentropy')
-        logger.info("Unified CNN model loaded")
-
-        with open(extractor_path, 'rb') as f:
-            extractor = pickle.load(f)
-
-        # Don't modify extractor methods - use as-is
-        logger.info("Multi-duration extractor loaded (unmodified)")
-
-        with open(label_encoder_path, 'rb') as f:
-            label_encoder = pickle.load(f)
-        logger.info("Label encoder loaded")
-
-        if os.path.exists(metadata_path):
-            with open(metadata_path, 'rb') as f:
-                metadata = pickle.load(f)
-            logger.info("Multi-duration metadata loaded")
-        else:
-            metadata = {
-                'labels': ['do', 're', 'mi', 'fa', 'sol', 'la', 'ti', 'do_high', 'no_angklung'],
-                'model_type': 'Multi-Duration-Angklung-CNN'
-            }
-
-        # Warm up with original methods
-        dummy_audio = np.random.randn(22050) * 0.1
-        test_mfcc, test_enhanced = extractor.prepare_enhanced_input(dummy_audio)
-
-        mfcc_input = test_mfcc[np.newaxis, ...]
-        enhanced_scaled = extractor.transform_enhanced_features(test_enhanced)
-        enhanced_input = enhanced_scaled[np.newaxis, ...]
-
-        test_pred = model.predict([mfcc_input, enhanced_input], verbose=0)
-
-        logger.info("✓ Original pipeline working correctly")
-        logger.info(f"Model type: {metadata.get('model_type', 'Unknown')}")
-
-        return True
-
-    except Exception as e:
-        logger.error(f"Failed to load model: {e}")
-        import traceback
-        logger.error(f"Full traceback: {traceback.format_exc()}")
-        return False
-
-
 def predict_angklung_multi_duration(audio_path):
     """Enhanced prediction function for multi-duration model"""
     global model, extractor, label_encoder, metadata
@@ -1883,14 +1820,70 @@ def health_check():
             'error': str(e)
         }), 500
 
+def load_multi_duration_model():
+    """Load model with minimal changes for compatibility"""
+    global model, extractor, label_encoder, metadata
+
+    try:
+        model_path = 'model/unified_angklung_model.keras'
+        extractor_path = 'model/unified_angklung_extractor.pkl'
+        label_encoder_path = 'model/unified_angklung_label_encoder.pkl'
+        metadata_path = 'model/unified_angklung_metadata.pkl'
+
+        if not all(os.path.exists(path) for path in [model_path, extractor_path, label_encoder_path]):
+            missing_files = [path for path in [model_path, extractor_path, label_encoder_path]
+                             if not os.path.exists(path)]
+            logger.error(f"Missing unified model files: {missing_files}")
+            return False
+
+        # Load model normally
+        model = keras.models.load_model(model_path)
+        model.compile(optimizer='adam', loss='sparse_categorical_crossentropy')
+        logger.info("Unified CNN model loaded")
+
+        with open(extractor_path, 'rb') as f:
+            extractor = pickle.load(f)
+
+        # Don't modify extractor methods - use as-is
+        logger.info("Multi-duration extractor loaded (unmodified)")
+
+        with open(label_encoder_path, 'rb') as f:
+            label_encoder = pickle.load(f)
+        logger.info("Label encoder loaded")
+
+        if os.path.exists(metadata_path):
+            with open(metadata_path, 'rb') as f:
+                metadata = pickle.load(f)
+            logger.info("Multi-duration metadata loaded")
+        else:
+            metadata = {
+                'labels': ['do', 're', 'mi', 'fa', 'sol', 'la', 'ti', 'do_high', 'no_angklung'],
+                'model_type': 'Multi-Duration-Angklung-CNN'
+            }
+
+        # Warm up with original methods
+        dummy_audio = np.random.randn(22050) * 0.1
+        test_mfcc, test_enhanced = extractor.prepare_enhanced_input(dummy_audio)
+
+        mfcc_input = test_mfcc[np.newaxis, ...]
+        enhanced_scaled = extractor.transform_enhanced_features(test_enhanced)
+        enhanced_input = enhanced_scaled[np.newaxis, ...]
+
+        test_pred = model.predict([mfcc_input, enhanced_input], verbose=0)
+
+        logger.info("✓ Original pipeline working correctly")
+        logger.info(f"Model type: {metadata.get('model_type', 'Unknown')}")
+
+        return True
+
+    except Exception as e:
+        logger.error(f"Failed to load model: {e}")
+        import traceback
+        logger.error(f"Full traceback: {traceback.format_exc()}")
+        return False
+
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))  # Use environment PORT
+    port = int(os.environ.get('PORT', 5000))
     debug = os.environ.get('DEBUG', 'False').lower() == 'true'
-
-    if load_multi_duration_model():
-        print("Model loaded successfully!")
-        app.run(host='0.0.0.0', port=port, debug=debug, threaded=True)
-    else:
-        print("WARNING: Model files not found, starting server for testing")
-        app.run(host='0.0.0.0', port=port, debug=debug, threaded=True)
+    app.run(host='0.0.0.0', port=port, debug=debug, threaded=True)
