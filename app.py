@@ -1794,25 +1794,6 @@ def model_status():
             'error': str(e)
         }), 500
 
-
-@app.route('/health', methods=['GET'])
-def health_check():
-    try:
-        # Basic health check - don't fail if model isn't loaded
-        return jsonify({
-            'status': 'healthy',
-            'server': 'Angklung CNN Server',
-            'version': 'v1.0',
-            'model_loaded': model is not None,
-            'extractor_loaded': extractor is not None,
-            'timestamp': str(datetime.now()) if 'datetime' in globals() else 'unknown'
-        })
-    except Exception as e:
-        # Even if there's an error, return 200 so Railway doesn't think we're down
-        return jsonify({
-            'status': 'degraded',
-            'error': str(e)
-        }), 200  # Return 200 instead of 500
 @app.route('/debug_load', methods=['GET'])
 def debug_load():
     import traceback
@@ -1955,23 +1936,70 @@ if load_multi_duration_model():
 else:
     logger.error("✗ Model loading failed")
 # Load model on startup - ADD THIS BEFORE if __name__ == '__main__':
-print("=== STARTING ANGKLUNG SERVER ===")
-print(f"PORT from environment: {os.environ.get('PORT', 'NOT_SET')}")
-print(f"Current working directory: {os.getcwd()}")
+# Global startup logging
+print("=" * 50)
+print("STARTING ANGKLUNG SERVER")
+print("=" * 50)
+print(f"Python executable: {sys.executable}")
+print(f"Working directory: {os.getcwd()}")
 print(f"Files in current directory: {os.listdir('.')}")
+print(f"PORT environment variable: {os.environ.get('PORT', 'NOT SET')}")
 
-# Initialize model loading
-try:
-    print("=== ATTEMPTING MODEL LOAD ===")
-    if load_multi_duration_model():
-        print("✓ MODEL LOADED SUCCESSFULLY")
-    else:
-        print("✗ MODEL LOADING FAILED")
-        # Don't exit - let the server start anyway for debugging
-except Exception as e:
-    print(f"✗ MODEL LOADING EXCEPTION: {e}")
+
+# Make health endpoint super simple and always work
+@app.route('/health', methods=['GET'])
+def health_check():
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': str(datetime.now()) if 'datetime' in sys.modules else 'unknown'
+    }), 200
+
+
+# Add a simple test endpoint that always works
+@app.route('/', methods=['GET'])
+def root():
+    return jsonify({
+        'message': 'Angklung Server is running',
+        'status': 'online'
+    }), 200
+
+
+# Model loading with error handling
+def safe_model_loading():
+    global model, extractor, label_encoder, metadata
+    try:
+        print("ATTEMPTING MODEL LOADING...")
+        if load_multi_duration_model():
+            print("SUCCESS: Model loaded")
+            return True
+        else:
+            print("FAILED: Model loading returned False")
+            return False
+    except Exception as e:
+        print(f"EXCEPTION during model loading: {e}")
+        import traceback
+        print(traceback.format_exc())
+        return False
+
+
+# Load model but don't crash if it fails
+print("Starting model loading process...")
+model_loaded = safe_model_loading()
+if model_loaded:
+    print("Model loading successful - server ready for predictions")
+else:
+    print("Model loading failed - server will run in diagnostic mode only")
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
-    print(f"=== STARTING FLASK ON PORT {port} ===")
-    app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
+    print(f"Starting Flask server on port {port}")
+    print("Server startup initiated...")
+
+    # Use production settings
+    app.run(
+        host='0.0.0.0',
+        port=port,
+        debug=False,
+        use_reloader=False,  # Disable reloader in production
+        threaded=True
+    )
