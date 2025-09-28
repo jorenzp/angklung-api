@@ -1916,49 +1916,58 @@ def debug_load():
         debug_info['errors'].append(f'Overall error: {str(e)}')
         debug_info['traceback'] = traceback.format_exc()
         return jsonify(debug_info)
+
+
 def load_multi_duration_model():
-    """Load model with minimal changes for compatibility"""
+    """Load model with better error handling"""
     global model, extractor, label_encoder, metadata
 
     try:
-        model_path = 'model/unified_angklung_model.keras'
-        extractor_path = 'model/unified_angklung_extractor.pkl'
-        label_encoder_path = 'model/unified_angklung_label_encoder.pkl'
-        metadata_path = 'model/unified_angklung_metadata.pkl'
+        logger.info("Starting model loading process...")
 
-        if not all(os.path.exists(path) for path in [model_path, extractor_path, label_encoder_path]):
-            missing_files = [path for path in [model_path, extractor_path, label_encoder_path]
-                             if not os.path.exists(path)]
-            logger.error(f"Missing unified model files: {missing_files}")
+        # Check if running in production (Railway)
+        is_production = os.environ.get('RAILWAY_ENVIRONMENT') == 'production'
+
+        model_files = {
+            'model': 'model/unified_angklung_model.keras',
+            'extractor': 'model/unified_angklung_extractor.pkl',
+            'label_encoder': 'model/unified_angklung_label_encoder.pkl',
+            'metadata': 'model/unified_angklung_metadata.pkl'
+        }
+
+        # Check file existence
+        missing_files = [name for name, path in model_files.items() if not os.path.exists(path)]
+        if missing_files:
+            logger.error(f"Missing files: {missing_files}")
             return False
 
-        # Load model normally
-        model = keras.models.load_model(model_path)
-        model.compile(optimizer='adam', loss='sparse_categorical_crossentropy')
-        logger.info("Unified CNN model loaded")
+        # Load TensorFlow model
+        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Reduce TF logging
+        import tensorflow as tf
 
-        with open(extractor_path, 'rb') as f:
+        logger.info("Loading Keras model...")
+        model = tf.keras.models.load_model(model_files['model'])
+        logger.info("✓ Keras model loaded")
+
+        # Load other components
+        logger.info("Loading extractor...")
+        with open(model_files['extractor'], 'rb') as f:
             extractor = pickle.load(f)
+        logger.info("✓ Extractor loaded")
 
-        # Don't modify extractor methods - use as-is
-        logger.info("Multi-duration extractor loaded (unmodified)")
-
-        with open(label_encoder_path, 'rb') as f:
+        logger.info("Loading label encoder...")
+        with open(model_files['label_encoder'], 'rb') as f:
             label_encoder = pickle.load(f)
-        logger.info("Label encoder loaded")
+        logger.info("✓ Label encoder loaded")
 
-        if os.path.exists(metadata_path):
-            with open(metadata_path, 'rb') as f:
-                metadata = pickle.load(f)
-            logger.info("Multi-duration metadata loaded")
-        else:
-            metadata = {
-                'labels': ['do', 're', 'mi', 'fa', 'sol', 'la', 'ti', 'do_high', 'no_angklung'],
-                'model_type': 'Multi-Duration-Angklung-CNN'
-            }
+        logger.info("Loading metadata...")
+        with open(model_files['metadata'], 'rb') as f:
+            metadata = pickle.load(f)
+        logger.info("✓ Metadata loaded")
 
-        # Warm up with original methods
-        dummy_audio = np.random.randn(22050) * 0.1
+        # Warm up with a small test
+        logger.info("Running model warmup...")
+        dummy_audio = np.random.randn(11025) * 0.01  # Smaller test audio
         test_mfcc, test_enhanced = extractor.prepare_enhanced_input(dummy_audio)
 
         mfcc_input = test_mfcc[np.newaxis, ...]
@@ -1966,20 +1975,26 @@ def load_multi_duration_model():
         enhanced_input = enhanced_scaled[np.newaxis, ...]
 
         test_pred = model.predict([mfcc_input, enhanced_input], verbose=0)
+        logger.info("✓ Model warmup completed")
 
-        logger.info("✓ Original pipeline working correctly")
         logger.info(f"Model type: {metadata.get('model_type', 'Unknown')}")
+        logger.info(f"Labels: {metadata.get('labels', [])}")
 
         return True
 
-
     except Exception as e:
-        logger.error(f"Failed to load model: {e}")
+        logger.error(f"Model loading failed: {e}")
         import traceback
-        logger.error(f"Full traceback: {traceback.format_exc()}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
         return False
+# Load model on startup
+logger.info("Starting model loading...")
+if load_multi_duration_model():
+    logger.info("✓ Model loaded successfully")
+else:
+    logger.error("✗ Model loading failed")
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 8080))  # Changed to 8080
+    port = int(os.environ.get('PORT', 8080))
     debug = os.environ.get('DEBUG', 'False').lower() == 'true'
     app.run(host='0.0.0.0', port=port, debug=debug, threaded=True)
