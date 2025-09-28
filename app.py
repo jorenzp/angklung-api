@@ -1673,6 +1673,37 @@ def debug_connection():
             'error': str(e)
         }), 500
 
+
+@app.route('/debug_files', methods=['GET'])
+def debug_files():
+    import os
+    try:
+        current_dir = os.getcwd()
+        files_in_current = os.listdir('.')
+
+        model_dir_exists = os.path.exists('model')
+        model_files = []
+        if model_dir_exists:
+            model_files = os.listdir('model')
+
+        # Also check for specific model files
+        model_file_status = {
+            'unified_angklung_model.keras': os.path.exists('model/unified_angklung_model.keras'),
+            'unified_angklung_extractor.pkl': os.path.exists('model/unified_angklung_extractor.pkl'),
+            'unified_angklung_label_encoder.pkl': os.path.exists('model/unified_angklung_label_encoder.pkl'),
+            'unified_angklung_metadata.pkl': os.path.exists('model/unified_angklung_metadata.pkl')
+        }
+
+        return jsonify({
+            'current_directory': current_dir,
+            'files_in_root': files_in_current,
+            'model_directory_exists': model_dir_exists,
+            'model_files': model_files,
+            'specific_model_files': model_file_status
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
 @app.route('/predict_note', methods=['POST'])
 def predict_note():
     try:
