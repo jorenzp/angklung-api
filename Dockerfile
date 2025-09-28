@@ -19,16 +19,20 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
+# Copy the entire project
+COPY . .
+
+# Set working directory to capstone folder
+WORKDIR /app/capstone
+
+# Install Python dependencies
 RUN pip install --upgrade pip --root-user-action=ignore
 RUN pip install --no-cache-dir numpy==1.23.5 --root-user-action=ignore
 RUN pip install --no-cache-dir tensorflow==2.13.0 --root-user-action=ignore
 RUN pip install --no-cache-dir -r requirements.txt --root-user-action=ignore
 
-COPY . .
-
 ENV PORT=8080
 EXPOSE $PORT
 
-# Use gunicorn directly - this is the key fix
+# Run from capstone directory
 CMD gunicorn --bind 0.0.0.0:$PORT --workers 1 --timeout 120 --preload app:app

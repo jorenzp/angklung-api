@@ -13,7 +13,8 @@ import scipy.signal as signal
 from flask_cors import CORS
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
+import sys
+from datetime import datetime
 app = Flask(__name__)
 CORS(app)
 model = None
@@ -1964,7 +1965,15 @@ def root():
     }), 200
 
 
-# Model loading with error handling
+# Model loading (put this BEFORE if __name__ == '__main__')
+print("=" * 50)
+print("STARTING ANGKLUNG SERVER")
+print(f"Python: {sys.version}")
+print(f"Working dir: {os.getcwd()}")
+print(f"PORT env: {os.environ.get('PORT', 'NOT SET')}")
+print("=" * 50)
+
+
 def safe_model_loading():
     global model, extractor, label_encoder, metadata
     try:
@@ -1982,7 +1991,7 @@ def safe_model_loading():
         return False
 
 
-# Load model but don't crash if it fails
+# Load model
 print("Starting model loading process...")
 model_loaded = safe_model_loading()
 if model_loaded:
@@ -1993,13 +2002,11 @@ else:
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
     print(f"Starting Flask server on port {port}")
-    print("Server startup initiated...")
 
-    # Use production settings
     app.run(
         host='0.0.0.0',
         port=port,
         debug=False,
-        use_reloader=False,  # Disable reloader in production
+        use_reloader=False,
         threaded=True
     )
