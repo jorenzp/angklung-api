@@ -1,9 +1,41 @@
-# Minimal requirements for Railway deployment
+# Core dependencies first
+numpy==1.24.3
+scipy==1.10.1
+
+# Flask and web framework
 Flask==2.3.3
 gunicorn==21.2.0
-numpy==1.24.3
-tensorflow==2.13.0
-librosa==0.10.1
+Werkzeug==2.3.7
+
+# Machine learning (install TensorFlow first) - FIXED VERSION
+tensorflow==2.15.0
 scikit-learn==1.3.0
+
+# Audio processing (compatible versions)
+librosa==0.10.1
 soundfile==0.12.1
-scipy==1.10.1
+audioread==3.0.0
+resampy==0.4.2
+
+# Audio system dependencies
+cffi==1.15.1
+
+# Essential utilities
+requests==2.31.0
+six==1.16.0
+setuptools==68.2.0
+wheel==0.41.2
+
+# Performance optimization
+psutil==5.9.5
+
+# Compatibility
+certifi==2023.7.22
+urllib3==1.26.16
+charset-normalizer==3.2.0
+
+# Remove problematic packages
+# pickle-mixin - not needed, pickle is built-in
+# logging - built-in module
+# os-sys - not a real package
+# ffmpeg-python - can cause conflicts

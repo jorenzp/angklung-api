@@ -1,4 +1,25 @@
 import os
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Reduce TensorFlow logging
+
+# Try to import TensorFlow and handle version issues
+try:
+    import tensorflow as tf
+    from tensorflow import keras
+
+    print(f"TensorFlow version: {tf.__version__}")
+
+    # For TensorFlow 2.15+ compatibility
+    if hasattr(tf.config, 'experimental'):
+        try:
+            tf.config.experimental.enable_memory_growth = True
+        except:
+            pass
+
+except ImportError as e:
+    print(f"TensorFlow import error: {e}")
+    # Fallback imports or error handling
+    pass
 import numpy as np
 import librosa
 import pickle
@@ -20,6 +41,7 @@ model = None
 extractor = None
 label_encoder = None
 metadata = None
+
 
 
 def convert_to_serializable(obj):
@@ -1936,12 +1958,18 @@ def health_check():
             'error': str(e)
         }), 500
 
+
 if __name__ == '__main__':
+    # Get port from environment variable (Railway sets this to 8080)
+    port = int(os.environ.get('PORT', 5000))  # Default to 5000 for local development
+
     if load_multi_duration_model():  # Or rename to load_unified_model()
         print("Unified angklung model loaded successfully!")
         print("Model supports both short and long notes automatically!")
+        print(f"Starting server on port {port}")
         app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
-        app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)
+        app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
     else:
         print("WARNING: No unified model files found, but starting server anyway for testing")
-        app.run(host='0.0.0.0', port=5000, debug=True, threaded=True)
+        print(f"Starting server on port {port}")
+        app.run(host='0.0.0.0', port=port, debug=True, threaded=True)
