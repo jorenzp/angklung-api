@@ -1,8 +1,42 @@
-tensorflow==2.13.0
-numpy==1.23.5
-flask==2.3.3
-flask-cors==4.0.0
-librosa==0.10.1
-scikit-learn==1.3.0
-scipy==1.11.1
+# Flask and web framework
+Flask==2.3.3
 gunicorn==21.2.0
+
+# Audio processing
+librosa==0.10.1
+soundfile==0.12.1
+
+# Machine learning and scientific computing
+tensorflow==2.13.0
+scikit-learn==1.3.0
+numpy==1.24.3
+scipy==1.11.2
+
+# Data handling
+pickle-mixin==1.0.2
+
+# System and utilities
+logging
+os-sys
+
+# Additional audio dependencies
+ffmpeg-python==0.2.0
+audioread==3.0.0
+
+# For better compatibility
+setuptools==68.2.0
+wheel==0.41.2
+
+# Memory and performance optimization
+psutil==5.9.5
+
+# HTTP and networking
+requests==2.31.0
+urllib3==2.0.4
+
+# JSON handling (usually included in Python)
+# But some versions might need explicit installation
+six==1.16.0
+
+# Ensure compatibility with Railway's Python environment
+certifi==2023.7.22

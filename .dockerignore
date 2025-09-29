@@ -1,17 +1,93 @@
-# Don't copy these files to Docker image
-.venv/
-__pycache__/
+# Git files
+.git
+.gitignore
+README.md
+.gitattributes
+
+# Python cache and virtual environments
+__pycache__
 *.pyc
 *.pyo
 *.pyd
 .Python
-.pytest_cache/
-.coverage
-.git/
-.gitignore
-README.md
-temp_*.wav
-*.log
+env/
+venv/
 .env
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.tox
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.pytest_cache/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+
+# Local development files
+*.local
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Temporary files
+temp_*
+*.tmp
+*.temp
+
+# Documentation
+docs/
+*.md
+LICENSE
+
+# Docker files (don't need to copy into image)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Jupyter notebooks
+*.ipynb
+.ipynb_checkpoints
+
+# Railway specific
+.railway/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Test files (optional - remove this line if you want to include tests)
+tests/
+test_*
+*_test.py
+
+# Large unnecessary files
+*.wav
+*.mp3
+*.m4a
+sample_audio/
+audio_samples/
+
+# Backup files
+*.bak
+*.backup

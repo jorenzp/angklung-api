@@ -6,7 +6,9 @@
   <component name="ChangeListManager">
     <list default="true" id="d442ba4b-fced-4c78-84c5-86f4d791f51d" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/Dockerfile" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -49,9 +51,11 @@
     &quot;Python.chart.executor&quot;: &quot;Run&quot;,
     &quot;Python.data_augmentation.executor&quot;: &quot;Run&quot;,
     &quot;Python.debug_feature_extraction.executor&quot;: &quot;Run&quot;,
+    &quot;Python.debug_model.executor&quot;: &quot;Run&quot;,
     &quot;Python.diagnose_angklung_model.executor&quot;: &quot;Run&quot;,
     &quot;Python.extract_mfccs.executor&quot;: &quot;Run&quot;,
     &quot;Python.feature_extraction.executor&quot;: &quot;Run&quot;,
+    &quot;Python.fix_extractor.executor&quot;: &quot;Run&quot;,
     &quot;Python.fixed_feature_extraction.executor&quot;: &quot;Run&quot;,
     &quot;Python.incremental_training.executor&quot;: &quot;Run&quot;,
     &quot;Python.negative_data.executor&quot;: &quot;Run&quot;,
@@ -81,9 +85,9 @@
       <recent name="C:\Users\Alliyah\PycharmProjects\capstone\.venv\dataset\short\ti" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
-      <recent name="C:\Users\Alliyah\PycharmProjects\capstone\model" />
-      <recent name="C:\Users\Alliyah\PycharmProjects\capstone\.venv" />
       <recent name="C:\Users\Alliyah\PycharmProjects\capstone" />
+      <recent name="C:\Users\Alliyah\PycharmProjects\capstone\.venv" />
+      <recent name="C:\Users\Alliyah\PycharmProjects\capstone\model" />
     </key>
   </component>
   <component name="SharedIndexes">

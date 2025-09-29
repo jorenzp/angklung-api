@@ -10,13 +10,12 @@ from scipy.signal import butter, lfilter, find_peaks, welch
 from scipy.stats import skew, kurtosis
 from sklearn.preprocessing import StandardScaler
 import scipy.signal as signal
-from flask_cors import CORS
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-import sys
-from datetime import datetime
+
 app = Flask(__name__)
-CORS(app)
+
 model = None
 extractor = None
 label_encoder = None
@@ -1140,6 +1139,69 @@ class MultiDurationAngklungExtractor:
         return self.scaler.transform(features)
 
 
+def load_multi_duration_model():
+    """Load model with minimal changes for compatibility"""
+    global model, extractor, label_encoder, metadata
+
+    try:
+        model_path = 'model/unified_angklung_model.keras'
+        extractor_path = 'model/unified_angklung_extractor.pkl'
+        label_encoder_path = 'model/unified_angklung_label_encoder.pkl'
+        metadata_path = 'model/unified_angklung_metadata.pkl'
+
+        if not all(os.path.exists(path) for path in [model_path, extractor_path, label_encoder_path]):
+            missing_files = [path for path in [model_path, extractor_path, label_encoder_path]
+                             if not os.path.exists(path)]
+            logger.error(f"Missing unified model files: {missing_files}")
+            return False
+
+        # Load model normally
+        model = keras.models.load_model(model_path)
+        model.compile(optimizer='adam', loss='sparse_categorical_crossentropy')
+        logger.info("Unified CNN model loaded")
+
+        with open(extractor_path, 'rb') as f:
+            extractor = pickle.load(f)
+
+        # Don't modify extractor methods - use as-is
+        logger.info("Multi-duration extractor loaded (unmodified)")
+
+        with open(label_encoder_path, 'rb') as f:
+            label_encoder = pickle.load(f)
+        logger.info("Label encoder loaded")
+
+        if os.path.exists(metadata_path):
+            with open(metadata_path, 'rb') as f:
+                metadata = pickle.load(f)
+            logger.info("Multi-duration metadata loaded")
+        else:
+            metadata = {
+                'labels': ['do', 're', 'mi', 'fa', 'sol', 'la', 'ti', 'do_high', 'no_angklung'],
+                'model_type': 'Multi-Duration-Angklung-CNN'
+            }
+
+        # Warm up with original methods
+        dummy_audio = np.random.randn(22050) * 0.1
+        test_mfcc, test_enhanced = extractor.prepare_enhanced_input(dummy_audio)
+
+        mfcc_input = test_mfcc[np.newaxis, ...]
+        enhanced_scaled = extractor.transform_enhanced_features(test_enhanced)
+        enhanced_input = enhanced_scaled[np.newaxis, ...]
+
+        test_pred = model.predict([mfcc_input, enhanced_input], verbose=0)
+
+        logger.info("✓ Original pipeline working correctly")
+        logger.info(f"Model type: {metadata.get('model_type', 'Unknown')}")
+
+        return True
+
+    except Exception as e:
+        logger.error(f"Failed to load model: {e}")
+        import traceback
+        logger.error(f"Full traceback: {traceback.format_exc()}")
+        return False
+
+
 def predict_angklung_multi_duration(audio_path):
     """Enhanced prediction function for multi-duration model"""
     global model, extractor, label_encoder, metadata
@@ -1611,18 +1673,7 @@ def test_connection():
             'error': str(e)
         }), 500
 
-@app.route('/')
-def index():
-    return jsonify({
-        'message': 'Angklung Note Recognition API',
-        'version': 'v1.0',
-        'status': 'running',
-        'endpoints': {
-            'predict': '/predict_note (POST)',
-            'test': '/test_connection (GET)',
-            'health': '/health (GET)'
-        }
-    })
+
 @app.route('/debug_connection', methods=['GET'])
 def debug_connection():
     """Debug endpoint to see exactly what Flutter receives"""
@@ -1673,25 +1724,6 @@ def debug_connection():
             'success': False,
             'error': str(e)
         }), 500
-
-
-@app.route('/debug_files', methods=['GET'])
-def debug_files():
-    try:
-        return jsonify({
-            'current_directory': os.getcwd(),
-            'files_in_root': os.listdir('.'),
-            'model_directory_exists': os.path.exists('model'),
-            'model_files': os.listdir('model') if os.path.exists('model') else [],
-            'expected_files': [
-                'unified_angklung_model.keras',
-                'unified_angklung_extractor.pkl',
-                'unified_angklung_label_encoder.pkl',
-                'unified_angklung_metadata.pkl'
-            ]
-        })
-    except Exception as e:
-        return jsonify({'error': str(e)})
 
 @app.route('/predict_note', methods=['POST'])
 def predict_note():
@@ -1783,237 +1815,133 @@ def model_status():
             'error': str(e)
         }), 500
 
-@app.route('/debug_load', methods=['GET'])
-def debug_load():
-    import traceback
-    import os
 
-    debug_info = {
-        'files_exist': {},
-        'loading_steps': {},
-        'errors': []
-    }
+# Add this route after your other route definitions and before if __name__ == '__main__':
 
+@app.route('/', methods=['GET'])
+def index():
+    """Root endpoint - provides API documentation"""
     try:
-        # Check file existence
-        model_files = {
-            'model': 'model/unified_angklung_model.keras',
-            'extractor': 'model/unified_angklung_extractor.pkl',
-            'label_encoder': 'model/unified_angklung_label_encoder.pkl',
-            'metadata': 'model/unified_angklung_metadata.pkl'
+        model_loaded = model is not None
+        extractor_loaded = extractor is not None
+        model_type = metadata.get('model_type', 'Unknown') if metadata else 'Unknown'
+        labels = metadata.get('labels', []) if metadata else []
+
+        is_unified_model = 'Unified' in model_type or 'Multi-Duration' in model_type
+        supports_short_notes = is_unified_model
+
+        api_info = {
+            'success': True,
+            'message': 'Angklung CNN API Server',
+            'version': 'Unified v1.0' if is_unified_model else 'Standard v1.0',
+            'status': 'running',
+            'model_info': {
+                'type': str(model_type),
+                'loaded': bool(model_loaded),
+                'supports_short_notes': bool(supports_short_notes),
+                'classes_supported': len(labels),
+                'negative_detection': bool('no_angklung' in labels)
+            },
+            'available_endpoints': {
+                'GET /': 'API documentation (this page)',
+                'GET /health': 'Health check and detailed status',
+                'GET /test_connection': 'Test model connection and capabilities',
+                'GET /debug_connection': 'Debug connection issues',
+                'GET /simple_test': 'Simple boolean test for Flutter',
+                'GET /model_status': 'Detailed model status',
+                'POST /predict_note': 'Upload audio file for note prediction'
+            },
+            'usage_examples': {
+                'health_check': 'GET http://localhost:5000/health',
+                'test_connection': 'GET http://localhost:5000/test_connection',
+                'predict_note': 'POST http://localhost:5000/predict_note (with audio file in form-data)'
+            }
         }
 
-        for name, path in model_files.items():
-            debug_info['files_exist'][name] = os.path.exists(path)
+        if is_unified_model:
+            api_info['unified_features'] = {
+                'duration_detection': 'Automatically detects short vs long notes',
+                'unified_processing': 'Handles all note durations in single model',
+                'enhanced_accuracy': 'Improved accuracy for short notes'
+            }
 
-        # Try loading each component individually
-        try:
-            import tensorflow as tf
-            from tensorflow import keras
-            model_temp = keras.models.load_model('model/unified_angklung_model.keras')
-            debug_info['loading_steps']['keras_model'] = 'SUCCESS'
-        except Exception as e:
-            debug_info['loading_steps']['keras_model'] = f'FAILED: {str(e)}'
-            debug_info['errors'].append(f'Keras model error: {str(e)}')
-
-        try:
-            import pickle
-            with open('model/unified_angklung_extractor.pkl', 'rb') as f:
-                extractor_temp = pickle.load(f)
-            debug_info['loading_steps']['extractor'] = 'SUCCESS'
-        except Exception as e:
-            debug_info['loading_steps']['extractor'] = f'FAILED: {str(e)}'
-            debug_info['errors'].append(f'Extractor error: {str(e)}')
-
-        try:
-            with open('model/unified_angklung_label_encoder.pkl', 'rb') as f:
-                label_encoder_temp = pickle.load(f)
-            debug_info['loading_steps']['label_encoder'] = 'SUCCESS'
-        except Exception as e:
-            debug_info['loading_steps']['label_encoder'] = f'FAILED: {str(e)}'
-            debug_info['errors'].append(f'Label encoder error: {str(e)}')
-
-        try:
-            with open('model/unified_angklung_metadata.pkl', 'rb') as f:
-                metadata_temp = pickle.load(f)
-            debug_info['loading_steps']['metadata'] = 'SUCCESS'
-        except Exception as e:
-            debug_info['loading_steps']['metadata'] = f'FAILED: {str(e)}'
-            debug_info['errors'].append(f'Metadata error: {str(e)}')
-
-        return jsonify(debug_info)
+        return jsonify(convert_to_serializable(api_info))
 
     except Exception as e:
-        debug_info['errors'].append(f'Overall error: {str(e)}')
-        debug_info['traceback'] = traceback.format_exc()
-        return jsonify(debug_info)
-
-
-def load_multi_duration_model():
-    global model, extractor, label_encoder, metadata
-
-    try:
-        logger.info("Starting model loading process...")
-
-        model_files = {
-            'model': 'model/unified_angklung_model.keras',
-            'extractor': 'model/unified_angklung_extractor.pkl',
-            'label_encoder': 'model/unified_angklung_label_encoder.pkl',
-            'metadata': 'model/unified_angklung_metadata.pkl'
-        }
-
-        # ADD THIS DEBUG SECTION
-        logger.info(f"Current working directory: {os.getcwd()}")
-        logger.info(f"Files in current directory: {os.listdir('.')}")
-
-        if os.path.exists('model'):
-            logger.info(f"Files in model directory: {os.listdir('model')}")
-        else:
-            logger.error("Model directory does not exist!")
-            return False
-
-        # Check each file individually
-        for name, path in model_files.items():
-            exists = os.path.exists(path)
-            logger.info(f"{name} file ({path}): {'EXISTS' if exists else 'MISSING'}")
-            if exists:
-                size = os.path.getsize(path)
-                logger.info(f"  - Size: {size} bytes")
-
-        missing_files = [name for name, path in model_files.items() if not os.path.exists(path)]
-        if missing_files:
-            logger.error(f"Missing files: {missing_files}")
-            return False
-
-        # Check file existence
-        missing_files = [name for name, path in model_files.items() if not os.path.exists(path)]
-        if missing_files:
-            logger.error(f"Missing files: {missing_files}")
-            return False
-
-        # Load TensorFlow model
-        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Reduce TF logging
-        import tensorflow as tf
-
-        logger.info("Loading Keras model...")
-        model = tf.keras.models.load_model(model_files['model'])
-        logger.info("✓ Keras model loaded")
-
-        # Load other components
-        logger.info("Loading extractor...")
-        with open(model_files['extractor'], 'rb') as f:
-            extractor = pickle.load(f)
-        logger.info("✓ Extractor loaded")
-
-        logger.info("Loading label encoder...")
-        with open(model_files['label_encoder'], 'rb') as f:
-            label_encoder = pickle.load(f)
-        logger.info("✓ Label encoder loaded")
-
-        logger.info("Loading metadata...")
-        with open(model_files['metadata'], 'rb') as f:
-            metadata = pickle.load(f)
-        logger.info("✓ Metadata loaded")
-
-        # Warm up with a small test
-        logger.info("Running model warmup...")
-        dummy_audio = np.random.randn(11025) * 0.01  # Smaller test audio
-        test_mfcc, test_enhanced = extractor.prepare_enhanced_input(dummy_audio)
-
-        mfcc_input = test_mfcc[np.newaxis, ...]
-        enhanced_scaled = extractor.transform_enhanced_features(test_enhanced)
-        enhanced_input = enhanced_scaled[np.newaxis, ...]
-
-        test_pred = model.predict([mfcc_input, enhanced_input], verbose=0)
-        logger.info("✓ Model warmup completed")
-
-        logger.info(f"Model type: {metadata.get('model_type', 'Unknown')}")
-        logger.info(f"Labels: {metadata.get('labels', [])}")
-
-        return True
-
-    except Exception as e:
-        logger.error(f"Model loading failed: {e}")
-        import traceback
-        logger.error(f"Traceback: {traceback.format_exc()}")
-        return False
-# Load model on startup
-logger.info("Starting model loading...")
-if load_multi_duration_model():
-    logger.info("✓ Model loaded successfully")
-else:
-    logger.error("✗ Model loading failed")
-# Load model on startup - ADD THIS BEFORE if __name__ == '__main__':
-# Global startup logging
-print("=" * 50)
-print("STARTING ANGKLUNG SERVER")
-print("=" * 50)
-print(f"Python executable: {sys.executable}")
-print(f"Working directory: {os.getcwd()}")
-print(f"Files in current directory: {os.listdir('.')}")
-print(f"PORT environment variable: {os.environ.get('PORT', 'NOT SET')}")
-
-
-# Make health endpoint super simple and always work
+        logger.error(f"Root endpoint error: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Angklung CNN API Server',
+            'status': 'error',
+            'error': str(e),
+            'available_endpoints': [
+                'GET /health',
+                'GET /test_connection',
+                'POST /predict_note'
+            ]
+        }), 500
 @app.route('/health', methods=['GET'])
 def health_check():
-    return jsonify({
-        'status': 'healthy',
-        'timestamp': str(datetime.now()) if 'datetime' in sys.modules else 'unknown'
-    }), 200
-
-
-# Add a simple test endpoint that always works
-@app.route('/', methods=['GET'])
-def root():
-    return jsonify({
-        'message': 'Angklung Server is running',
-        'status': 'online'
-    }), 200
-
-
-# Model loading (put this BEFORE if __name__ == '__main__')
-print("=" * 50)
-print("STARTING ANGKLUNG SERVER")
-print(f"Python: {sys.version}")
-print(f"Working dir: {os.getcwd()}")
-print(f"PORT env: {os.environ.get('PORT', 'NOT SET')}")
-print("=" * 50)
-
-
-def safe_model_loading():
-    global model, extractor, label_encoder, metadata
     try:
-        print("ATTEMPTING MODEL LOADING...")
-        if load_multi_duration_model():
-            print("SUCCESS: Model loaded")
-            return True
-        else:
-            print("FAILED: Model loading returned False")
-            return False
+        model_loaded = model is not None
+        extractor_loaded = extractor is not None
+        model_type = metadata.get('model_type', 'Unknown') if metadata else 'Unknown'
+        labels = metadata.get('labels', []) if metadata else []
+
+        # Updated detection
+        is_unified_model = 'Unified' in model_type or 'Multi-Duration' in model_type
+        supports_short_notes = is_unified_model
+
+        result = {
+            'success': True,
+            'server': f'Angklung {"Unified" if is_unified_model else "Standard"} CNN Server',
+            'version': 'Unified v1.0' if is_unified_model else 'Standard v1.0',
+            'status': 'healthy' if (model_loaded and extractor_loaded) else 'degraded',
+            'components': {
+                'cnn_model': 'loaded' if model_loaded else 'missing',
+                'extractor': 'loaded' if extractor_loaded else 'missing',
+                'label_encoder': 'loaded' if label_encoder is not None else 'missing',
+                'metadata': 'loaded' if metadata else 'missing'
+            },
+            'model_info': {
+                'type': str(model_type),
+                'classes': len(labels),
+                'negative_detection': bool('no_angklung' in labels),
+                'supports_short_notes': bool(supports_short_notes)
+            }
+        }
+
+        if is_unified_model:
+            result['unified_status'] = {
+                'duration_detection': 'ACTIVE',
+                'duration_features': 'ACTIVE (11 features)',
+                'unified_processing': 'ACTIVE - handles all durations automatically',
+                'expected_accuracy': 0.88
+            }
+
+        result['technical_status'] = {
+            'distance_normalization': 'ACTIVE',
+            'enhanced_features': f'ACTIVE ({96 if is_unified_model else 85} features)',
+            'cnn_architecture': 'ACTIVE',
+            'distance_compensation': 'ACTIVE',
+            'short_notes_support': 'ACTIVE' if supports_short_notes else 'INACTIVE'
+        }
+
+        return jsonify(convert_to_serializable(result))
+
     except Exception as e:
-        print(f"EXCEPTION during model loading: {e}")
-        import traceback
-        print(traceback.format_exc())
-        return False
-
-
-# Load model
-print("Starting model loading process...")
-model_loaded = safe_model_loading()
-if model_loaded:
-    print("Model loading successful - server ready for predictions")
-else:
-    print("Model loading failed - server will run in diagnostic mode only")
+        return jsonify({
+            'succq ess': False,
+            'status': 'unhealthy',
+            'error': str(e)
+        }), 500
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 8080))
-    print(f"Starting Flask server on port {port}")
-
-    app.run(
-        host='0.0.0.0',
-        port=port,
-        debug=False,
-        use_reloader=False,
-        threaded=True
-    )
+    if load_multi_duration_model():  # Or rename to load_unified_model()
+        print("Unified angklung model loaded successfully!")
+        print("Model supports both short and long notes automatically!")
+        app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+        app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)
+    else:
+        print("WARNING: No unified model files found, but starting server anyway for testing")
+        app.run(host='0.0.0.0', port=5000, debug=True, threaded=True)
