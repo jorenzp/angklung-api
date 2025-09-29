@@ -1161,68 +1161,131 @@ class MultiDurationAngklungExtractor:
         return self.scaler.transform(features)
 
 
+def fix_keras_compatibility():
+    """Fix Keras 3.0 compatibility issues"""
+    try:
+        import tensorflow as tf
+        from tensorflow import keras
+
+        # Force Keras 2.x compatibility mode if using TF 2.15+
+        if hasattr(tf, '__version__') and tf.__version__.startswith('2.15'):
+            import os
+            os.environ['TF_USE_LEGACY_KERAS'] = '1'
+
+        # Monkey-patch for old model format
+        if not hasattr(keras.models, 'functional'):
+            keras.models.functional = keras.models
+
+        logger.info(f"Keras compatibility fixed for TF {tf.__version__}")
+        return True
+    except Exception as e:
+        logger.error(f"Keras compatibility fix failed: {e}")
+        return False
+
+
+# Call this BEFORE loading the model
+fix_keras_compatibility()
+
+
 def load_multi_duration_model():
-    """Load model with minimal changes for compatibility"""
+    """Enhanced model loading with better error handling"""
     global model, extractor, label_encoder, metadata
 
     try:
+        # Fix Keras compatibility first
+        fix_keras_compatibility()
+
         model_path = 'model/unified_angklung_model.keras'
         extractor_path = 'model/unified_angklung_extractor.pkl'
         label_encoder_path = 'model/unified_angklung_label_encoder.pkl'
         metadata_path = 'model/unified_angklung_metadata.pkl'
 
-        if not all(os.path.exists(path) for path in [model_path, extractor_path, label_encoder_path]):
-            missing_files = [path for path in [model_path, extractor_path, label_encoder_path]
-                             if not os.path.exists(path)]
-            logger.error(f"Missing unified model files: {missing_files}")
+        # Check if files exist
+        missing_files = []
+        for path, name in [
+            (model_path, 'Model'),
+            (extractor_path, 'Extractor'),
+            (label_encoder_path, 'Label Encoder')
+        ]:
+            if not os.path.exists(path):
+                missing_files.append(name)
+                logger.error(f"Missing: {path}")
+
+        if missing_files:
+            logger.error(f"Missing files: {', '.join(missing_files)}")
+            logger.error("Model files must be in the 'model/' directory")
             return False
 
-        # Load model normally
-        model = keras.models.load_model(model_path)
-        model.compile(optimizer='adam', loss='sparse_categorical_crossentropy')
-        logger.info("Unified CNN model loaded")
+        # Load model with custom options for compatibility
+        logger.info("Loading model...")
+        try:
+            # Try modern loading first
+            model = keras.models.load_model(
+                model_path,
+                compile=False  # Don't compile, we'll do it manually
+            )
+        except Exception as e:
+            logger.warning(f"Modern loading failed: {e}")
+            # Try legacy loading
+            try:
+                import tensorflow as tf
+                model = tf.keras.models.load_model(
+                    model_path,
+                    custom_objects=None,
+                    compile=False
+                )
+            except Exception as e2:
+                logger.error(f"Legacy loading also failed: {e2}")
+                return False
 
+        # Compile manually
+        model.compile(
+            optimizer='adam',
+            loss='sparse_categorical_crossentropy',
+            metrics=['accuracy']
+        )
+        logger.info("✓ Model loaded and compiled")
+
+        # Load other components
         with open(extractor_path, 'rb') as f:
             extractor = pickle.load(f)
-
-        # Don't modify extractor methods - use as-is
-        logger.info("Multi-duration extractor loaded (unmodified)")
+        logger.info("✓ Extractor loaded")
 
         with open(label_encoder_path, 'rb') as f:
             label_encoder = pickle.load(f)
-        logger.info("Label encoder loaded")
+        logger.info("✓ Label encoder loaded")
 
         if os.path.exists(metadata_path):
             with open(metadata_path, 'rb') as f:
                 metadata = pickle.load(f)
-            logger.info("Multi-duration metadata loaded")
+            logger.info("✓ Metadata loaded")
         else:
             metadata = {
                 'labels': ['do', 're', 'mi', 'fa', 'sol', 'la', 'ti', 'do_high', 'no_angklung'],
                 'model_type': 'Multi-Duration-Angklung-CNN'
             }
+            logger.warning("Metadata file not found, using defaults")
 
-        # Warm up with original methods
+        # Warmup test
+        logger.info("Running warmup prediction...")
         dummy_audio = np.random.randn(22050) * 0.1
         test_mfcc, test_enhanced = extractor.prepare_enhanced_input(dummy_audio)
-
         mfcc_input = test_mfcc[np.newaxis, ...]
         enhanced_scaled = extractor.transform_enhanced_features(test_enhanced)
         enhanced_input = enhanced_scaled[np.newaxis, ...]
+        _ = model.predict([mfcc_input, enhanced_input], verbose=0)
 
-        test_pred = model.predict([mfcc_input, enhanced_input], verbose=0)
-
-        logger.info("✓ Original pipeline working correctly")
+        logger.info("✓ Model warmup successful")
         logger.info(f"Model type: {metadata.get('model_type', 'Unknown')}")
+        logger.info(f"Supported labels: {metadata.get('labels', [])}")
 
         return True
 
     except Exception as e:
         logger.error(f"Failed to load model: {e}")
         import traceback
-        logger.error(f"Full traceback: {traceback.format_exc()}")
+        logger.error(traceback.format_exc())
         return False
-
 
 def predict_angklung_multi_duration(audio_path):
     """Enhanced prediction function for multi-duration model"""
